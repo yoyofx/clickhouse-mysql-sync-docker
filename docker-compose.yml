@@ -1,0 +1,47 @@
+version: '3'
+services:
+  mysql:
+    platform: "linux/amd64"
+    restart: always
+    privileged: true
+    image: mysql:8.0.30
+    container_name: mysqlServer
+    volumes:
+      - ./mysql/db:/var/lib/mysql
+      - ./mysql/conf/:/etc/mysql/conf.d
+      - ./mysql/logs:/logs
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_INITDB_SKIP_TZINFO: "Asia/Shanghai"
+    command: ["mysqld", "--log-bin=mysql-bin", "--server-id=100","--sync_binlog=1","--binlog_ignore-db=mysql","--binlog_format=mixed"]
+    ports:
+      - "33106:3306"
+    networks:
+      - test_ntw
+
+  ch_server:  # 自定义名称 clickhouse server
+    platform: "linux/amd64"
+    image: yandex/clickhouse-server
+    ports:
+      - "8123:8123"  # 映射端口
+      - "9000:9000"
+      - "9004:9004"
+    volumes:
+      - ./clickhouse/db:/var/lib/clickhouse  # 目录挂载, 将docker中的目录挂载到当前文件夹的db目录下
+    networks:
+      - test_ntw  # 指定网络环境
+
+  ch_client:  # 自定义名称  clickhouse client
+    platform: "linux/amd64"
+    image: yandex/clickhouse-client
+    entrypoint:
+      - /bin/sleep
+    command:
+      - infinity
+    networks:
+      - test_ntw
+  
+
+networks:
+  test_ntw:
+    driver: bridge
